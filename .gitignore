@@ -1,0 +1,6 @@
+*.pyc
+ijaas.zip
+/.idea/
+/out/
+/build/
+/.gradle/
