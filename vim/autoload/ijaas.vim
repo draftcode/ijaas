@@ -21,6 +21,10 @@ else
 endif
 
 function! ijaas#call(method, params) abort
+  let l:ci = ch_info(s:ch)
+  if l:ci == 0 || l:ci.status != 'open'
+    throw 'ijaas: Not connected'
+  endif
   let l:response = ch_evalexpr(
         \ s:ch,
         \ {'method': a:method, 'params': a:params},
