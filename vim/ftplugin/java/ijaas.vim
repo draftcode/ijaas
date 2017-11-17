@@ -17,4 +17,4 @@ augroup Ijaas
 augroup END
 
 setlocal omnifunc=ijaas#complete
-command! OrganizeImport call ijaas#organize_import()
+command! -buffer OrganizeImport call ijaas#organize_import()
