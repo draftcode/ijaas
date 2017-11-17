@@ -12,7 +12,7 @@
 " See the License for the specific language governing permissions and
 " limitations under the License.
 augroup Ijaas
-  au!
+  au! * <buffer>
   au BufWritePost <buffer> call ijaas#buf_write_post()
 augroup END
 
