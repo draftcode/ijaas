@@ -20,7 +20,11 @@ else
   let s:ch = ch_open('localhost:5800')
 endif
 
-function! ijaas#call(method, params)
+function! ijaas#call(method, params) abort
+  let l:ci = ch_info(s:ch)
+  if type(l:ci) != type({}) || l:ci.status != 'open'
+    throw 'ijaas: Not connected'
+  endif
   let l:response = ch_evalexpr(
         \ s:ch,
         \ {'method': a:method, 'params': a:params},
@@ -42,7 +46,7 @@ function! ijaas#call(method, params)
   return l:response['result']
 endfunction
 
-function! ijaas#complete(findstart, base)
+function! ijaas#complete(findstart, base) abort
   if a:findstart
     let l:col = col('.') - 1
     let l:line = getline('.')
@@ -79,7 +83,7 @@ function! ijaas#complete(findstart, base)
   endif
 endfunction
 
-function! ijaas#buf_write_post()
+function! ijaas#buf_write_post() abort
   let l:result = ijaas#call('java_src_update', {'file': expand('%:p')})
 
   if !has_key(l:result, 'problems') || len(l:result['problems']) == 0
@@ -92,7 +96,7 @@ endfunction
 sign define IjaasErrorSign text=>> texthl=Error
 sign define IjaasWarningSign text=>> texthl=Todo
 
-function! ijaas#set_problems(problems)
+function! ijaas#set_problems(problems) abort
   let l:filename = expand('%')
   sign unplace *
   let l:id = 1
@@ -109,7 +113,7 @@ function! ijaas#set_problems(problems)
   cwindow
 endfunction
 
-function! ijaas#organize_import()
+function! ijaas#organize_import() abort
   let l:response = ijaas#call('java_get_import_candidates', {
         \ 'file': expand('%:p'),
         \ 'text': join(getline(1, '$'), "\n"),
@@ -133,7 +137,7 @@ function! ijaas#organize_import()
   endif
 endfunction
 
-function! s:select_imports_fzf_continue(state, selected)
+function! s:select_imports_fzf_continue(state, selected) abort
   call s:add_import(a:selected)
   while !empty(a:state['question'])
     let l:question = a:state['question'][0]
@@ -151,7 +155,7 @@ function! s:select_imports_fzf_continue(state, selected)
   endwhile
 endfunction
 
-function! s:select_imports_fzf(inputs)
+function! s:select_imports_fzf(inputs) abort
   let l:state = {
         \ 'question': a:inputs[1:],
         \ }
@@ -162,7 +166,7 @@ function! s:select_imports_fzf(inputs)
         \ })
 endfunction
 
-function! s:select_imports_normal(inputs)
+function! s:select_imports_normal(inputs) abort
   if len(a:inputs) == 1
     return a:inputs[0]
   endif
@@ -181,7 +185,7 @@ function! s:select_imports_normal(inputs)
   endif
 endfunction
 
-function! s:add_import(input)
+function! s:add_import(input) abort
   let l:lnum = 1
   if a:input =~# '^import static '
     let l:last_static_import = 0

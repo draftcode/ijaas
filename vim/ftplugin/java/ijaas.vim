@@ -13,8 +13,8 @@
 " limitations under the License.
 augroup Ijaas
   au!
-  au BufNewFile,BufReadPost *.java setlocal omnifunc=ijaas#complete
-  au BufWritePost           *.java call ijaas#buf_write_post()
+  au BufWritePost <buffer> call ijaas#buf_write_post()
 augroup END
 
-command! OrganizeImport call ijaas#organize_import()
+setlocal omnifunc=ijaas#complete
+command! -buffer OrganizeImport call ijaas#organize_import()
