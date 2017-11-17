@@ -34,7 +34,12 @@ dependencies {
   compile 'com.google.code.gson:gson:2.8.1'
 }
 
+def intellijVersion = 'IC-2017.1.5'
+if (project.hasProperty('intellij.version')) {
+  intellijVersion = getProperty('intellij.version')
+}
+
 intellij {
-  version 'IC-2017.1.5'
+  version intellijVersion
 }
 version '0.1'
