@@ -50,37 +50,30 @@ function! ijaas#complete(findstart, base) abort
   if a:findstart
     let l:col = col('.') - 1
     let l:line = getline('.')
-    if l:col == len(l:line)
-      " The cursor is at the eol.
-      let l:col = len(l:line) - 1
-    endif
-    while l:col != -1
-      if l:line[l:col] !~# '[:alnum:]'
-        break
-      endif
+    while l:col > 0 && l:line[l:col-1] =~# '\a'
       let l:col -= 1
     endwhile
-    return l:col + 1
-  else
-    let l:lines = getline(1, '$')
-    let l:pos = getcurpos()
-    if l:pos[1] == 1 " lnum
-      let l:text = join(l:lines, "\n")
-      let l:offset = l:pos[2] - 1 " col
-    else
-      " Join the lines from beginning to (the cursor line - 1).
-      let l:text = join(l:lines[0:l:pos[1]-2], "\n")
-      let l:offset = len(l:text) + 1 + l:pos[2] - 1 " \n + col
-      " Join the rest of the lines.
-      let l:text .= "\n" . join(l:lines[l:pos[1]-1:-1], "\n")
-    endif
-
-    return ijaas#call('java_complete', {
-          \ 'file': expand('%:p'),
-          \ 'text': l:text,
-          \ 'offset': l:offset,
-          \ })['completions']
+    return l:col
   endif
+  let l:lines = getline(1, '$')
+  let l:pos = getcurpos()
+  if l:pos[1] == 1 " lnum
+    let l:text = join(l:lines, "\n")
+    let l:offset = l:pos[2] - 1 " col
+  else
+    " Join the lines from beginning to (the cursor line - 1).
+    let l:text = join(l:lines[0:l:pos[1]-2], "\n")
+    let l:offset = len(l:text) + 1 + l:pos[2] " \n + col
+    " Join the rest of the lines.
+    let l:text .= "\n" . join(l:lines[l:pos[1]-1:], "\n")
+  endif
+
+  let ret = ijaas#call('java_complete', {
+        \ 'file': expand('%:p'),
+        \ 'text': l:text,
+        \ 'offset': l:offset,
+        \ })['completions']
+  return filter(ret, 'stridx(v:val["word"], a:base) == 0')
 endfunction
 
 function! ijaas#buf_write_post() abort
