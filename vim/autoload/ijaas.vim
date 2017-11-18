@@ -97,7 +97,7 @@ sign define IjaasErrorSign text=>> texthl=Error
 sign define IjaasWarningSign text=>> texthl=Todo
 
 function! ijaas#set_problems(problems) abort
-  let l:filename = expand('%')
+  let l:filename = expand('%:p')
   sign unplace *
   let l:id = 1
   for l:problem in a:problems
