@@ -42,4 +42,11 @@ if (project.hasProperty('intellij.version')) {
 intellij {
   version intellijVersion
 }
+
+patchPluginXml {
+  // See https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html
+  sinceBuild = '171.4694'
+  untilBuild = '172.*'
+}
+
 version '0.1'
