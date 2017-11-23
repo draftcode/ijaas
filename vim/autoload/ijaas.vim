@@ -182,7 +182,7 @@ function! s:add_import(input) abort
       let l:line = getline(l:lnum)
 
       if l:line =~# '^import static '
-        if a:input < l:line
+        if a:input <# l:line
           call append(l:lnum-1, a:input)
           return
         endif
@@ -210,7 +210,7 @@ function! s:add_import(input) abort
       if l:line =~# '^import static '
         " Ignore
       elseif l:line =~# '^import '
-        if a:input < l:line
+        if a:input <# l:line
           call append(l:lnum-1, a:input)
           return
         endif

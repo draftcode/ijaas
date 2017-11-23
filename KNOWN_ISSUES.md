@@ -3,7 +3,6 @@
 * Autocomplete omits some results when there are many candidates.
 * OrganizeImport adds checkerframework's strange `m` class.
 * OrganizeImport won't add any static import.
-* OrganizeImport's ordering is wrong.
 * OrganizeImport somehow can add the same imports.
 * Everything is slow.
 * The timeout doesn't work well. This is probably because CodeSmellDetector and
