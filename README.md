@@ -9,7 +9,8 @@ This is not an official Google product (i.e. a 20% project).
 1. git clone.
 2. Import project into IntelliJ. Use Gradle plugin.
 3. Run `gradle buildPlugin`. It creates `build/distributions/ijaas-*.zip` at the
-   git root dir.
+   git root dir. (You can pass `-Pintellij.version=IC-2017.2.6` to specify the
+   IntelliJ version.)
 4. Select "File" menu and click "Settings...". In "Plugins" menu, click "Install
    plugin from disk..." button. Choose `ijaas-*.zip`. You can uninstall this
    plugin from this menu.
