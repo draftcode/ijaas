@@ -47,16 +47,18 @@ function! ijaas#call(method, params) abort
 endfunction
 
 function! ijaas#complete(findstart, base) abort
+  let l:col = col('.') - 1
+  let l:line = getline('.')
+  while l:col > 0 && l:line[l:col-1] =~# '\a'
+    let l:col -= 1
+  endwhile
   if a:findstart
-    let l:col = col('.') - 1
-    let l:line = getline('.')
-    while l:col > 0 && l:line[l:col-1] =~# '\a'
-      let l:col -= 1
-    endwhile
     return l:col
   endif
+
   let l:lines = getline(1, '$')
   let l:pos = getcurpos()
+  let l:pos[2] = l:col
   if l:pos[1] == 1 " lnum
     let l:text = join(l:lines, "\n")
     let l:offset = l:pos[2] - 1 " col

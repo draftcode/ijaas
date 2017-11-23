@@ -1,7 +1,5 @@
 # Known Issues
 
-* The autocompletion start point is weird.
-* YCM might ignore the start point.
 * Autocomplete omits some results when there are many candidates.
 * OrganizeImport adds checkerframework's strange `m` class.
 * OrganizeImport won't add any static import.
