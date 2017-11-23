@@ -119,7 +119,8 @@ function! ijaas#organize_import() abort
     return
   endif
   if exists('*fzf#run')
-    call s:select_imports_fzf(l:choices)
+    let l:state = { 'question': l:choices }
+    call s:select_imports_fzf(l:state, "")
   else
     for l:items in l:choices
       let l:sel = s:select_imports_normal(l:items)
@@ -132,8 +133,10 @@ function! ijaas#organize_import() abort
   endif
 endfunction
 
-function! s:select_imports_fzf_continue(state, selected) abort
-  call s:add_import(a:selected)
+function! s:select_imports_fzf(state, selected) abort
+  if a:selected != ""
+    call s:add_import(a:selected)
+  endif
   while !empty(a:state['question'])
     let l:question = a:state['question'][0]
     let a:state['question'] = a:state['question'][1:]
@@ -143,22 +146,11 @@ function! s:select_imports_fzf_continue(state, selected) abort
       call fzf#run({
             \ 'source': l:question,
             \ 'down': '40%',
-            \ 'sink': function('s:select_imports_fzf_continue', [a:state]),
+            \ 'sink': function('s:select_imports_fzf', [a:state]),
             \ })
       return
     endif
   endwhile
-endfunction
-
-function! s:select_imports_fzf(inputs) abort
-  let l:state = {
-        \ 'question': a:inputs[1:],
-        \ }
-  call fzf#run({
-        \ 'source': a:inputs[0],
-        \ 'sink': function('s:select_imports_fzf_continue', [l:state]),
-        \ 'down': '40%',
-        \ })
 endfunction
 
 function! s:select_imports_normal(inputs) abort
