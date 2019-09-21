@@ -13,7 +13,7 @@
 // limitations under the License.
 
 plugins {
-  id 'org.jetbrains.intellij' version '0.4.8'
+  id 'org.jetbrains.intellij' version '0.4.10'
   id 'com.github.sherter.google-java-format' version '0.8'
 }
 apply plugin: 'java'
@@ -30,7 +30,7 @@ sourceSets {
 }
 
 dependencies {
-  compile 'com.google.guava:guava:27.1-jre'
+  compile 'com.google.guava:guava:28.1-jre'
   compile 'com.google.code.gson:gson:2.8.5'
 }
 
@@ -46,7 +46,10 @@ intellij {
 patchPluginXml {
   // See https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html
   sinceBuild = '171.4694'
-  untilBuild = '191.*'
+  untilBuild = '192.*'
 }
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
 
 version '0.1'
