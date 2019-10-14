@@ -38,3 +38,33 @@ port (see https://github.com/JetBrains/gradle-intellij-plugin/issues/18).
 Connect to the testing IntelliJ with `USE_DEV_IJAAS=1 IJAAS_PORT=5801 vim`. The
 ijaas vim plugin will recognize `IJAAS_PORT` and use that to connect to the
 ijaas IntelliJ plugin.
+
+## Using with ALE
+
+You can define an ALE linter.
+
+```
+# Disable buf_write_post. Files are checked by ALE.
+let g:ijaas_disable_buf_write_post = 1
+
+# Define ijaas linter.
+function! s:ijaas_handle(buffer, lines) abort
+  let l:response = json_decode(join(a:lines, '\n'))[1]
+  if has_key(l:response, 'error') || has_key(l:response, 'cause')
+    return [{
+          \  'lnum': 1,
+          \  'text': 'ijaas: RPC error: error=' . l:response['error']
+          \    . ' cause=' . l:response['cause'],
+          \}]
+  endif
+
+  return l:response['result']['problems']
+endfunction
+call ale#linter#Define('java', {
+      \   'name': 'ijaas',
+      \   'executable': 'nc',
+      \   'command': "echo '[0, {\"method\": \"java_src_update\", \"params\": {\"file\": \"%s\"}}]' | nc localhost 5800 -N",
+      \   'lint_file': 1,
+      \   'callback': function('s:ijaas_handle'),
+      \ })
+```
