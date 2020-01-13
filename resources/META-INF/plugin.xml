@@ -18,6 +18,7 @@
   <name>ijaas</name>
   <description>IntelliJ as a Service</description>
   <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.java</depends>
   <application-components>
     <component>
       <implementation-class>com.google.devtools.intellij.ijaas.IjaasApplicationComponent</implementation-class>
