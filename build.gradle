@@ -34,11 +34,6 @@ dependencies {
   implementation("com.google.code.gson:gson:2.8.7")
 }
 
-// def intellijVersion = 'IC-2021.2'
-// if (project.hasProperty('intellij.version')) {
-//   intellijVersion = getProperty('intellij.version')
-// }
-
 intellij {
   version = '2021.2'
   plugins = ['java']
