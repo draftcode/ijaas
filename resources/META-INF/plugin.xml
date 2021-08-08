@@ -16,12 +16,11 @@
 <idea-plugin>
   <id>com.google.devtools.intellij.ijaas</id>
   <name>ijaas</name>
-  <description>IntelliJ as a Service</description>
+  <description>IntelliJ as a Service. Act as a backend server for Vim.</description>
+  <vendor>draftcode</vendor>
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.java</depends>
-  <application-components>
-    <component>
-      <implementation-class>com.google.devtools.intellij.ijaas.IjaasApplicationComponent</implementation-class>
-    </component>
-  </application-components>
+  <extensions defaultExtensionNs="com.intellij">
+    <postStartupActivity implementation="com.google.devtools.intellij.ijaas.IjaasStartupActivity" />
+  </extensions>
 </idea-plugin>
