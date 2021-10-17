@@ -6,8 +6,8 @@ import com.intellij.util.DocumentUtil;
 import com.intellij.util.ExceptionUtil;
 import java.util.concurrent.atomic.AtomicReference;
 
-public abstract class MoreWriteAction {
-  private MoreWriteAction() {}
+public abstract class MoreWriteActions {
+  private MoreWriteActions() {}
 
   public static void runAndWaitForDocument(Runnable r) {
     WriteAction.runAndWait(

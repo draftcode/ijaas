@@ -60,6 +60,7 @@ class IjaasLspServer implements LanguageServer {
       opts.setTriggerCharacters(List.of("."));
       cap.setCompletionProvider(opts);
     }
+    cap.setDefinitionProvider(true);
     return CompletableFuture.completedFuture(new InitializeResult(cap, new ServerInfo("ijaas")));
   }
 

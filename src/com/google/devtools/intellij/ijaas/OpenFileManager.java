@@ -59,7 +59,7 @@ public class OpenFileManager {
 
   public void didChange(DidChangeTextDocumentParams params) {
     OpenedFile file = files.get(params.getTextDocument().getUri());
-    MoreWriteAction.runAndWaitForDocument(
+    MoreWriteActions.runAndWaitForDocument(
         () -> {
           for (TextDocumentContentChangeEvent e : params.getContentChanges()) {
             Position startPos = e.getRange().getStart();
@@ -84,7 +84,7 @@ public class OpenFileManager {
 
   public void didSave(DidSaveTextDocumentParams params) {
     OpenedFile file = files.get(params.getTextDocument().getUri());
-    MoreWriteAction.runAndWaitForDocument(
+    MoreWriteActions.runAndWaitForDocument(
         () -> {
           FileDocumentManager.getInstance().reloadFromDisk(file.editor.getDocument());
         });
@@ -101,7 +101,7 @@ public class OpenFileManager {
       this.uri = uri;
       this.version = version;
       Pair<Editor, PsiFile> p =
-          MoreWriteAction.computeAndWaitForDocument(
+          MoreWriteActions.computeAndWaitForDocument(
               () -> {
                 VirtualFile vf =
                     LocalFileSystem.getInstance().findFileByPath(uri.replace("file:/", ""));
