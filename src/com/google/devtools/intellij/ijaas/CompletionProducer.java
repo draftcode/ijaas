@@ -19,11 +19,15 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiKeyword;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiVariable;
+import com.intellij.psi.javadoc.PsiDocComment;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
@@ -77,7 +81,26 @@ public class CompletionProducer {
     return response.get();
   }
 
+  private static String convertSignature(
+      String returnType, String typeParams, String name, String parameter, String throwTypes) {
+    StringBuilder b = new StringBuilder();
+    if (typeParams != null && !typeParams.isEmpty()) {
+      b.append(typeParams);
+      b.append(' ');
+    }
+    b.append(returnType);
+    b.append(' ');
+    b.append(name);
+    b.append(parameter);
+    if (typeParams != null && !throwTypes.isEmpty()) {
+      b.append(" throws ");
+      b.append(throwTypes);
+    }
+    return b.toString();
+  }
+
   private static class CompletionHandler extends CodeCompletionHandlerBase {
+    private static final Pattern javadocStripRe = Pattern.compile("(\\w*/\\*\\*\\w*|\\w*\\*\\w*)");
     private List<CompletionItem> items = new ArrayList<>();
 
     private CompletionHandler() {
@@ -104,7 +127,26 @@ public class CompletionProducer {
           } else {
             c.setInsertText(c.getLabel() + "(");
           }
-          c.setDetail(presentation.getTypeText() + " - " + presentation.getTailText());
+          c.setDetail(
+              convertSignature(
+                  presentation.getTypeText(),
+                  m.getTypeParameterList().getText(),
+                  m.getName(),
+                  presentation.getTailText(),
+                  m.getThrowsList().getText()));
+          PsiMethod nav = (PsiMethod) m.getNavigationElement();
+          PsiDocComment comment = nav.getDocComment();
+          if (comment != null) {
+            String doc = javadocStripRe.matcher(comment.getText()).replaceAll("");
+            c.setDocumentation(doc);
+          }
+          c.setLabel(
+              item.getLookupString()
+                  + "("
+                  + Arrays.stream(m.getParameterList().getParameters())
+                      .map(p -> p.getName())
+                      .collect(Collectors.joining(", "))
+                  + ")");
           c.setKind(CompletionItemKind.Method);
         } else if (psi instanceof PsiKeyword) {
           c.setKind(CompletionItemKind.Keyword);
