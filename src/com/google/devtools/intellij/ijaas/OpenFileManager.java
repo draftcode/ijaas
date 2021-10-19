@@ -13,9 +13,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
-import java.io.File;
 import java.net.URI;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -40,15 +38,6 @@ public class OpenFileManager {
   OpenFileManager(Project project, DiagnosticsProducer diagnosticsProducer) {
     this.project = project;
     this.diagnosticsProducer = diagnosticsProducer;
-  }
-
-  @Nullable
-  public OpenedFile getByPath(String filePath) {
-    try {
-      return getByURI(new File(filePath).toURI().toURL().toExternalForm());
-    } catch (MalformedURLException e) {
-      return null;
-    }
   }
 
   @Nullable
@@ -112,15 +101,13 @@ public class OpenFileManager {
       Pair<Editor, PsiFile> p =
           MoreWriteActions.computeAndWaitForDocument(
               () -> {
-                ;
-                String path = null;
+                String path;
                 try {
                   path = Paths.get(new URI(uri)).toFile().getPath();
-                } catch(URISyntaxException e) {
+                } catch (URISyntaxException e) {
                   throw new RuntimeException("Cannot find the VirtualFile");
                 }
-                VirtualFile vf =
-                    LocalFileSystem.getInstance().findFileByPath(path);
+                VirtualFile vf = LocalFileSystem.getInstance().findFileByPath(path);
                 if (vf == null) {
                   throw new RuntimeException("Cannot find the VirtualFile");
                 }
