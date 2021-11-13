@@ -72,6 +72,7 @@ public class OpenFileManager {
           }
           file.version = params.getTextDocument().getVersion();
         });
+    file.version = params.getTextDocument().getVersion();
     diagnosticsProducer.updateAsync(file);
   }
 
