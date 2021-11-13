@@ -8,8 +8,8 @@ import com.intellij.codeInsight.completion.CompletionType;
 import com.intellij.codeInsight.completion.impl.CompletionServiceImpl;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementPresentation;
-import com.intellij.codeInsight.lookup.impl.LookupImpl;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.LogicalPosition;
@@ -36,6 +36,8 @@ import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class CompletionProducer {
+  private static final Pattern javadocStripRe = Pattern.compile("(\\w*/\\*\\*\\w*|\\w*\\*\\w*)");
+
   private final Project project;
   private final ExecutorService executor;
   private final OpenFileManager manager;
@@ -64,21 +66,80 @@ public class CompletionProducer {
                   new LogicalPosition(
                       position.getPosition().getLine(), position.getPosition().getCharacter()));
         });
-    AtomicReference<CompletionList> response = new AtomicReference<>();
+    AtomicReference<List<LookupElement>> elements = new AtomicReference<>();
     ApplicationManager.getApplication()
         .invokeAndWait(
             () -> {
+              // Running in EDT.
               try {
-                CompletionList resp = new CompletionList();
                 CompletionHandler handler = new CompletionHandler();
                 handler.invokeCompletion(project, editor);
-                resp.setItems(handler.items);
-                response.set(resp);
+                elements.set(handler.elements);
               } catch (Exception e) {
                 e.printStackTrace();
               }
             });
-    return response.get();
+    return ReadAction.compute(
+        () -> {
+          CompletionList resp = new CompletionList();
+          resp.setItems(convertItems(elements.get()));
+          return resp;
+        });
+  }
+
+  private static List<CompletionItem> convertItems(List<LookupElement> elements) {
+    List<CompletionItem> items = new ArrayList<>();
+    for (LookupElement item : elements) {
+      PsiElement psi = item.getPsiElement();
+      if (psi == null) {
+        continue;
+      }
+      CompletionItem c = new CompletionItem();
+      LookupElementPresentation presentation = new LookupElementPresentation();
+      item.renderElement(presentation);
+      c.setLabel(item.getLookupString());
+      if (psi instanceof PsiMethod) {
+        PsiMethod m = (PsiMethod) psi;
+        if (m.getParameterList().getParametersCount() == 0) {
+          c.setInsertText(c.getLabel() + "()");
+        } else {
+          c.setInsertText(c.getLabel() + "(");
+        }
+        c.setDetail(
+            convertSignature(
+                presentation.getTypeText(),
+                m.getTypeParameterList().getText(),
+                m.getName(),
+                presentation.getTailText(),
+                m.getThrowsList().getText()));
+        PsiMethod nav = (PsiMethod) m.getNavigationElement();
+        PsiDocComment comment = nav.getDocComment();
+        if (comment != null) {
+          String doc = javadocStripRe.matcher(comment.getText()).replaceAll("");
+          c.setDocumentation(doc);
+        }
+        c.setLabel(
+            item.getLookupString()
+                + "("
+                + Arrays.stream(m.getParameterList().getParameters())
+                    .map(p -> p.getName())
+                    .collect(Collectors.joining(", "))
+                + ")");
+        c.setKind(CompletionItemKind.Method);
+      } else if (psi instanceof PsiKeyword) {
+        c.setKind(CompletionItemKind.Keyword);
+      } else if (psi instanceof PsiClass) {
+        c.setDetail(presentation.getTailText());
+        c.setKind(CompletionItemKind.Class);
+      } else if (psi instanceof PsiVariable) {
+        c.setDetail(presentation.getTypeText());
+        c.setKind(CompletionItemKind.Variable);
+      } else {
+        c.setDetail(psi.getClass().getSimpleName());
+      }
+      items.add(c);
+    }
+    return items;
   }
 
   private static String convertSignature(
@@ -100,8 +161,7 @@ public class CompletionProducer {
   }
 
   private static class CompletionHandler extends CodeCompletionHandlerBase {
-    private static final Pattern javadocStripRe = Pattern.compile("(\\w*/\\*\\*\\w*|\\w*\\*\\w*)");
-    private List<CompletionItem> items = new ArrayList<>();
+    private List<LookupElement> elements = new ArrayList<>();
 
     private CompletionHandler() {
       super(CompletionType.BASIC);
@@ -110,57 +170,7 @@ public class CompletionProducer {
     @Override
     protected void completionFinished(CompletionProgressIndicator indicator, boolean hasModifiers) {
       CompletionServiceImpl.setCompletionPhase(new CompletionPhase.ItemsCalculated(indicator));
-      LookupImpl lookup = indicator.getLookup();
-      for (LookupElement item : lookup.getItems()) {
-        PsiElement psi = item.getPsiElement();
-        if (psi == null) {
-          continue;
-        }
-        CompletionItem c = new CompletionItem();
-        LookupElementPresentation presentation = new LookupElementPresentation();
-        item.renderElement(presentation);
-        c.setLabel(item.getLookupString());
-        if (psi instanceof PsiMethod) {
-          PsiMethod m = (PsiMethod) psi;
-          if (m.getParameterList().getParametersCount() == 0) {
-            c.setInsertText(c.getLabel() + "()");
-          } else {
-            c.setInsertText(c.getLabel() + "(");
-          }
-          c.setDetail(
-              convertSignature(
-                  presentation.getTypeText(),
-                  m.getTypeParameterList().getText(),
-                  m.getName(),
-                  presentation.getTailText(),
-                  m.getThrowsList().getText()));
-          PsiMethod nav = (PsiMethod) m.getNavigationElement();
-          PsiDocComment comment = nav.getDocComment();
-          if (comment != null) {
-            String doc = javadocStripRe.matcher(comment.getText()).replaceAll("");
-            c.setDocumentation(doc);
-          }
-          c.setLabel(
-              item.getLookupString()
-                  + "("
-                  + Arrays.stream(m.getParameterList().getParameters())
-                      .map(p -> p.getName())
-                      .collect(Collectors.joining(", "))
-                  + ")");
-          c.setKind(CompletionItemKind.Method);
-        } else if (psi instanceof PsiKeyword) {
-          c.setKind(CompletionItemKind.Keyword);
-        } else if (psi instanceof PsiClass) {
-          c.setDetail(presentation.getTailText());
-          c.setKind(CompletionItemKind.Class);
-        } else if (psi instanceof PsiVariable) {
-          c.setDetail(presentation.getTypeText());
-          c.setKind(CompletionItemKind.Variable);
-        } else {
-          c.setDetail(psi.getClass().getSimpleName());
-        }
-        items.add(c);
-      }
+      elements.addAll(indicator.getLookup().getItems());
     }
   }
 }
