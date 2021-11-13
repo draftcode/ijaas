@@ -8,9 +8,6 @@ import com.intellij.codeInsight.completion.CompletionType;
 import com.intellij.codeInsight.completion.impl.CompletionServiceImpl;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementPresentation;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.LogicalPosition;
 import com.intellij.openapi.project.Project;
@@ -25,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -58,7 +54,7 @@ public class CompletionProducer {
   private CompletionList completionInner(CompletionParams position) {
     OpenedFile file = manager.getByURI(position.getTextDocument().getUri());
     Editor editor = file.getEditor();
-    WriteAction.runAndWait(
+    ThreadControl.runOnWriteThread(
         () -> {
           editor
               .getCaretModel()
@@ -66,23 +62,17 @@ public class CompletionProducer {
                   new LogicalPosition(
                       position.getPosition().getLine(), position.getPosition().getCharacter()));
         });
-    AtomicReference<List<LookupElement>> elements = new AtomicReference<>();
-    ApplicationManager.getApplication()
-        .invokeAndWait(
+    List<LookupElement> elements =
+        ThreadControl.computeOnEDT(
             () -> {
-              // Running in EDT.
-              try {
-                CompletionHandler handler = new CompletionHandler();
-                handler.invokeCompletion(project, editor);
-                elements.set(handler.elements);
-              } catch (Exception e) {
-                e.printStackTrace();
-              }
+              CompletionHandler handler = new CompletionHandler();
+              handler.invokeCompletion(project, editor);
+              return handler.elements;
             });
-    return ReadAction.compute(
+    return ThreadControl.computeOnReadThread(
         () -> {
           CompletionList resp = new CompletionList();
-          resp.setItems(convertItems(elements.get()));
+          resp.setItems(convertItems(elements));
           return resp;
         });
   }

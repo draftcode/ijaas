@@ -1,6 +1,5 @@
 package com.google.devtools.intellij.ijaas;
 
-import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
@@ -46,18 +45,45 @@ public class OpenFileManager {
   }
 
   public void didOpen(DidOpenTextDocumentParams params) {
+    Pair<Editor, PsiFile> p =
+        ThreadControl.computeOnWriteThreadAndWaitForDocument(
+            () -> {
+              String path;
+              try {
+                path = Paths.get(new URI(params.getTextDocument().getUri())).toFile().getPath();
+              } catch (URISyntaxException e) {
+                throw new RuntimeException("Cannot find the VirtualFile");
+              }
+              VirtualFile vf = LocalFileSystem.getInstance().findFileByPath(path);
+              if (vf == null) {
+                throw new RuntimeException("Cannot find the VirtualFile");
+              }
+              PsiManager psiManager = PsiManager.getInstance(project);
+              PsiFile psiFile = psiManager.findFile(vf);
+              if (psiFile == null) {
+                throw new RuntimeException("Cannot find the PsiFile");
+              }
+              Document document = PsiDocumentManager.getInstance(project).getDocument(psiFile);
+              if (document == null) {
+                throw new RuntimeException("Cannot get the Document");
+              }
+              Editor editor = EditorFactory.getInstance().createEditor(document, project);
+              editor.getDocument().setText(params.getTextDocument().getText());
+              return Pair.pair(editor, psiFile);
+            });
     OpenedFile file =
         new OpenedFile(
             params.getTextDocument().getUri(),
-            params.getTextDocument().getVersion(),
-            params.getTextDocument().getText());
-    files.put(params.getTextDocument().getUri(), file);
+            p.getFirst(),
+            p.getSecond(),
+            params.getTextDocument().getVersion());
+    files.put(file.uri, file);
     diagnosticsProducer.updateAsync(file);
   }
 
   public void didChange(DidChangeTextDocumentParams params) {
     OpenedFile file = files.get(params.getTextDocument().getUri());
-    MoreWriteActions.runAndWaitForDocument(
+    ThreadControl.runOnWriteThreadAndWaitForDocument(
         () -> {
           for (TextDocumentContentChangeEvent e : params.getContentChanges()) {
             Position startPos = e.getRange().getStart();
@@ -78,12 +104,12 @@ public class OpenFileManager {
 
   public void didClose(DidCloseTextDocumentParams params) {
     OpenedFile file = files.remove(params.getTextDocument().getUri());
-    WriteAction.runAndWait(() -> EditorFactory.getInstance().releaseEditor(file.editor));
+    ThreadControl.runOnWriteThread(() -> EditorFactory.getInstance().releaseEditor(file.editor));
   }
 
   public void didSave(DidSaveTextDocumentParams params) {
     OpenedFile file = files.get(params.getTextDocument().getUri());
-    MoreWriteActions.runAndWaitForDocument(
+    ThreadControl.runOnWriteThreadAndWaitForDocument(
         () -> {
           FileDocumentManager.getInstance().reloadFromDisk(file.editor.getDocument());
         });
@@ -96,37 +122,11 @@ public class OpenFileManager {
     private final PsiFile psiFile;
     private int version;
 
-    private OpenedFile(String uri, int version, String text) {
+    private OpenedFile(String uri, Editor editor, PsiFile psiFile, int version) {
       this.uri = uri;
+      this.editor = editor;
+      this.psiFile = psiFile;
       this.version = version;
-      Pair<Editor, PsiFile> p =
-          MoreWriteActions.computeAndWaitForDocument(
-              () -> {
-                String path;
-                try {
-                  path = Paths.get(new URI(uri)).toFile().getPath();
-                } catch (URISyntaxException e) {
-                  throw new RuntimeException("Cannot find the VirtualFile");
-                }
-                VirtualFile vf = LocalFileSystem.getInstance().findFileByPath(path);
-                if (vf == null) {
-                  throw new RuntimeException("Cannot find the VirtualFile");
-                }
-                PsiManager psiManager = PsiManager.getInstance(project);
-                PsiFile psiFile = psiManager.findFile(vf);
-                if (psiFile == null) {
-                  throw new RuntimeException("Cannot find the PsiFile");
-                }
-                Document document = PsiDocumentManager.getInstance(project).getDocument(psiFile);
-                if (document == null) {
-                  throw new RuntimeException("Cannot get the Document");
-                }
-                Editor editor = EditorFactory.getInstance().createEditor(document, project);
-                editor.getDocument().setText(text);
-                return Pair.pair(editor, psiFile);
-              });
-      this.editor = p.first;
-      this.psiFile = p.second;
     }
 
     public String getURI() {

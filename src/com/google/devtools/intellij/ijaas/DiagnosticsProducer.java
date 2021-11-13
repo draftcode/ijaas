@@ -8,7 +8,6 @@ import com.intellij.codeInspection.ProblemDescriptor;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.codeInspection.ex.InspectionToolWrapper;
 import com.intellij.codeInspection.ex.Tools;
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.LogicalPosition;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.util.ProgressIndicatorBase;
@@ -52,7 +51,7 @@ public class DiagnosticsProducer {
   }
 
   private void updateInternal(OpenedFile file) {
-    ReadAction.run(
+    ThreadControl.runOnReadThread(
         () -> {
           try {
             // NOTE: CodeSmellInfo is another source for diagnostics. However, it seems that it

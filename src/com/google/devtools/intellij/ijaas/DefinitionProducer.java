@@ -1,7 +1,6 @@
 package com.google.devtools.intellij.ijaas;
 
 import com.google.devtools.intellij.ijaas.OpenFileManager.OpenedFile;
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.LogicalPosition;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
@@ -29,7 +28,7 @@ public class DefinitionProducer {
       DefinitionParams params) {
     OpenedFile of = manager.getByURI(params.getTextDocument().getUri());
     try {
-      return ReadAction.compute(
+      return ThreadControl.computeOnReadThread(
           () -> {
             int offset =
                 of.getEditor()
