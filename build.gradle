@@ -35,14 +35,14 @@ dependencies {
 }
 
 intellij {
-  version = '2021.2'
+  version = '2021.3'
   plugins = ['java']
 }
 
 patchPluginXml {
   // See https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html
   sinceBuild = '171.4694'
-  untilBuild = '212.*'
+  untilBuild = '221.*'
 }
 
 sourceCompatibility = '1.8'
