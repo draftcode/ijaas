@@ -20,6 +20,7 @@ plugins {
 
 repositories {
   mavenCentral()
+  google()
 }
 
 sourceSets {
@@ -30,8 +31,11 @@ sourceSets {
 }
 
 dependencies {
-  implementation("com.google.guava:guava:30.1.1-jre")
-  implementation("com.google.code.gson:gson:2.8.7")
+  implementation("com.google.guava:guava:31.0.1-jre")
+  implementation("com.google.code.gson:gson:2.8.8")
+  implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.12.0")
+  implementation("com.google.dagger:dagger:2.39.1")
+  annotationProcessor('com.google.dagger:dagger-compiler:2.39.1')
 }
 
 intellij {
@@ -45,7 +49,7 @@ patchPluginXml {
   untilBuild = '221.*'
 }
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+sourceCompatibility = '11'
+targetCompatibility = '11'
 
 version '0.1'
